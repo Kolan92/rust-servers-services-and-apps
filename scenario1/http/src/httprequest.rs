@@ -21,11 +21,11 @@ impl From<&str> for HttpRequest {
         let request = lines.next().unwrap();
         let (method, resource, version) = parse_request_line(request);
 
-        let mut headers: HashMap<String, String> = HashMap::new();
-        for header in lines.by_ref().take_while(|line| line.len() != 0) {
-            let (key, value) = parse_header(header);
-            headers.insert(key, value);
-        }
+        let headers = lines
+            .by_ref()
+            .take_while(|line| line.len() != 0)
+            .map(|header| parse_header(header))
+            .collect();
 
         let body = lines.fold(String::new(), |a, b| a + b + "\r\n");
 
