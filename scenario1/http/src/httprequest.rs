@@ -40,14 +40,14 @@ impl From<&str> for HttpRequest {
 }
 
 fn parse_header(header: &str) -> (String, String) {
-    let header: Vec<&str> = header.split(":").collect();
+    let header: Vec<&str> = header.split(": ").collect();
     let key = header.get(0).unwrap_or(&"").to_string();
     let value = header.get(1).unwrap_or(&"").to_string();
     (key, value)
 }
 
 fn parse_request_line(request: &str) -> (Method, Resource, Version) {
-    let request: Vec<&str> = request.split(" ").collect();
+    let request: Vec<&str> = request.split_whitespace().collect();
     let method: Method = request[0].into();
     let resource = Resource::Path(request[1].into());
     let version: Version = request[2].into();
@@ -106,16 +106,20 @@ mod tests {
 
     #[test]
     fn test_read_http() {
-        let s = "POST /greeting HTTP/1.1\r\nHost:localhost:3000\r\nUser-Agent:curl/7.64.1\r\nAccept:*/*\r\n\r\n{\r\n\"id\":1\r\n}\r\n";
-        let mut headers_expected = HashMap::new();
-        headers_expected.insert("Host".into(), "localhost".into());
-        headers_expected.insert("Accept".into(), "*/*".into());
-        headers_expected.insert("User-Agent".into(), "curl/7.64.1".into());
-        let req: HttpRequest = s.into();
-        assert_eq!(Method::Post, req.method);
-        assert_eq!(Version::V1_1, req.version);
-        assert_eq!(Resource::Path("/greeting".to_string()), req.resource);
-        assert_eq!(headers_expected, req.headers);
-        assert_eq!("{\r\n\"id\":1\r\n}\r\n", req.body);
+        let request_string = "POST /greeting HTTP/1.1\r\nHost: localhost:3000\r\nUser-Agent: curl/7.64.1\r\nAccept: */*\r\n\r\n{\r\n\"id\":1\r\n}\r\n";
+        let headers_expected = HashMap::from([
+            ("Host".into(), "localhost:3000".into()),
+            ("Accept".into(), "*/*".into()),
+            ("User-Agent".into(), "curl/7.64.1".into()),
+        ]);
+        let request_message: HttpRequest = request_string.into();
+        assert_eq!(Method::Post, request_message.method);
+        assert_eq!(Version::V1_1, request_message.version);
+        assert_eq!(
+            Resource::Path("/greeting".to_string()),
+            request_message.resource
+        );
+        assert_eq!(headers_expected, request_message.headers);
+        assert_eq!("{\r\n\"id\":1\r\n}\r\n", request_message.body);
     }
 }
