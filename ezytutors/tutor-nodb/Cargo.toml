@@ -2,12 +2,18 @@
 name = "tutor-nodb"
 version = "0.1.0"
 edition = "2021"
+default-run = "tutor-service"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 actix-rt = "2.9.0"
 actix-web = "4.4.0"
+serde = { version = "1.0.188", features = ["derive"] }
+chrono = { version = "0.4.31", features = ["serde"] }
 
 [[bin]]
 name = "basic-server"
+
+[[bin]]
+name = "tutor-service"
