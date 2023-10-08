@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        insert into courses_c4 (tutor_id, course_name)\n        Values ($1, $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1a1b29b2225f43e5076aebd4357a70558e5f0ecb2b70be7add56cb769b851e56"
+}
