@@ -1,11 +1,14 @@
 use actix_web::{web, App, HttpResponse, HttpServer};
-use chrono::Utc;
 use dotenv::dotenv;
 use handlers::{get_courses_for_tutor, get_single_courses, new_course};
-use models::Course;
 use sqlx::PgPool;
 use state::AppState;
-use std::{env, io, sync::Mutex};
+use std::{
+    env,
+    fs::File,
+    io::{self, Error},
+    sync::Mutex,
+};
 
 #[path = "./iter2/state.rs"]
 mod state;
@@ -19,8 +22,12 @@ mod handlers;
 #[path = "./iter2/models.rs"]
 mod models;
 
+#[path = "./iter2/errors.rs"]
+mod errors;
+
 pub fn general_routes(cfg: &mut web::ServiceConfig) {
-    cfg.route("/health", web::get().to(health_check_handler));
+    cfg.route("/health", web::get().to(health_check_handler))
+        .route("/error", web::get().to(error));
 }
 
 pub fn courses_routes(cfg: &mut web::ServiceConfig) {
@@ -43,7 +50,10 @@ pub async fn health_check_handler(app_state: web::Data<AppState>) -> HttpRespons
         health_check_response, visit_count
     ))
 }
-
+async fn error() -> Result<HttpResponse, Error> {
+    let _ = File::open("fictionalfile.txt")?;
+    Ok(HttpResponse::Ok().body("File read successfully"))
+}
 #[actix_rt::main]
 async fn main() -> io::Result<()> {
     dotenv().ok();

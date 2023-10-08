@@ -1,12 +1,12 @@
 use actix_web::{web, HttpResponse};
 
-use crate::{models::Course, state::AppState};
+use crate::{errors::AppError, models::Course, state::AppState};
 
 pub async fn new_course(
     new_course: web::Json<Course>,
     app_state: web::Data<AppState>,
-) -> HttpResponse {
-    let result = sqlx::query!(
+) -> Result<HttpResponse, AppError> {
+    sqlx::query!(
         r#"
         insert into courses_c4 (tutor_id, course_name)
         Values ($1, $2)"#,
@@ -14,21 +14,18 @@ pub async fn new_course(
         new_course.course_name.clone(),
     )
     .execute(&app_state.db)
-    .await;
+    .await?;
 
-    match result {
-        Ok(_) => HttpResponse::Created().json(""),
-        Err(e) => HttpResponse::InternalServerError().json(e.to_string()),
-    }
+    Ok(HttpResponse::Created().json(""))
 }
 
 pub async fn get_courses_for_tutor(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
-) -> HttpResponse {
+) -> Result<HttpResponse, AppError> {
     let tutor_id: i32 = params.into_inner();
 
-    let result = sqlx::query!(
+    let course_rows = sqlx::query!(
         r#"
         select course_id, tutor_id, course_name, posted_time
         from courses_c4
@@ -42,23 +39,18 @@ pub async fn get_courses_for_tutor(
         posted_time: Some(chrono::NaiveDateTime::from(course_row.posted_time.unwrap())),
     })
     .fetch_all(&app_state.db)
-    .await;
+    .await?;
 
-    match result {
-        Ok(course_rows) => {
-            if course_rows.len() > 0 {
-                HttpResponse::Ok().json(course_rows)
-            } else {
-                HttpResponse::NotFound().json("")
-            }
-        }
-        Err(e) => HttpResponse::InternalServerError().json(e.to_string()),
+    if course_rows.len() > 0 {
+        Ok(HttpResponse::Ok().json(course_rows))
+    } else {
+        Ok(HttpResponse::NotFound().json(""))
     }
 }
 pub async fn get_single_courses(
     app_state: web::Data<AppState>,
     params: web::Path<(i32, i32)>,
-) -> HttpResponse {
+) -> Result<HttpResponse, AppError> {
     let (tutor_id, course_id) = params.into_inner();
 
     let course = sqlx::query!(
@@ -73,15 +65,12 @@ pub async fn get_single_courses(
         tutor_id
     )
     .fetch_one(&app_state.db)
-    .await;
+    .await?;
 
-    match course {
-        Ok(course) => HttpResponse::Ok().json(Course {
-            course_id: Some(course.course_id),
-            tutor_id: course.tutor_id,
-            course_name: course.course_name.clone(),
-            posted_time: Some(chrono::NaiveDateTime::from(course.posted_time.unwrap())),
-        }),
-        _ => HttpResponse::NotFound().json(""),
-    }
+    Ok(HttpResponse::Ok().json(Course {
+        course_id: Some(course.course_id),
+        tutor_id: course.tutor_id,
+        course_name: course.course_name.clone(),
+        posted_time: Some(chrono::NaiveDateTime::from(course.posted_time.unwrap())),
+    }))
 }
